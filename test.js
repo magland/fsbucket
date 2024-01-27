@@ -85,25 +85,43 @@ class Client {
     }
 }
 
+function getRandomString(length) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+const thePath = '/test-' + getRandomString(10) + '.txt';
+const theContent = getRandomString(100000);
+
 // Test
 const client = new Client('localhost', SECRET_KEY);
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fsbucket-'));
 const testFilePath = path.join(tempDir, 'test.txt');
-fs.writeFileSync(testFilePath, 'Hello, world!');
+fs.writeFileSync(testFilePath, theContent);
 
-client.putFile(testFilePath, '/test.txt', (err, data) => {
+client.putFile(testFilePath, thePath, (err, data) => {
     if (err) {
         console.error('Error putting file:', err);
         return;
     }
     console.log('Put file response:', data);
 
-    client.getFile('/test.txt', (err, data) => {
+    client.getFile(thePath, (err, data) => {
         if (err) {
             console.error('Error getting file:', err);
             return;
         }
         const dataText = data.toString();
-        console.log('Get file response:', dataText);
+        console.log('Get file response:', dataText.length);
+        if (dataText === theContent) {
+            console.log('Content matches');
+        } else {
+            console.error('Content mismatch');
+            return;
+        }
     });
 });

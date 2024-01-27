@@ -132,8 +132,6 @@ app.get('/*', (req, res) => {
     readStream.on('error', err => {
         return res.status(500).send(`Error reading file: ${err.message}`);
     });
-
-    readStream.pipe(res);
 });
 
 app.put('/*', (req, res) => {
