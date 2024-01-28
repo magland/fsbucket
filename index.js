@@ -11,7 +11,7 @@ The environment variables are: FSBUCKET_BASE_DIR - the base directory for file
 storage FSBUCKET_SECRET_KEY - the secret key for signature validation PORT - the
 port the server will listen on
 
-The server supports two main operations: GET and PUT.
+The server supports two operations: GET and PUT.
 
 The GET operation is used to retrieve files. It validates the request signature
 and the safety of the requested path before proceeding. If the file exists and
@@ -21,14 +21,8 @@ bytes. Otherwise, it will return the entire file.
 The PUT operation is used to upload files. It also validates the request
 signature and the safety of the requested path. If the file already exists, it
 will return an error. Otherwise, it will write the incoming request data to a
-new file.
-
-The server also includes utility functions for signature validation and path
-safety checking. The signature validation uses a HMAC SHA256 algorithm. The path
-safety checking ensures that the path does not contain any unsafe parts and that
-it is not too long.
-
-The server starts listening on the configured port after it is set up.
+temporary file, and then rename the temporary file to the requested path. This
+ensures that the file is not partially written if the request is interrupted.
 
 The entity generating the signature must have access to the secret key. To
 generate the signature, use the code below in the function:
