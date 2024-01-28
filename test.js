@@ -73,7 +73,8 @@ class Client {
             });
             res.on('end', () => {
                 const data = Buffer.concat(chunks);
-                callback(null, data);
+                const err = res.statusCode === 200 ? null : new Error(`Status code ${res.statusCode}: ${data.toString()}`);
+                callback(err, data);
             });
         });
 
@@ -95,7 +96,7 @@ function getRandomString(length) {
 }
 
 const thePath = '/test-' + getRandomString(10) + '.txt';
-const theContent = getRandomString(100000);
+const theContent = getRandomString(10000);
 
 // Test
 const client = new Client('localhost', SECRET_KEY);

@@ -73,7 +73,7 @@ if (SECRET_KEY.length < 64) {
 
 ///////////////////////////////////////////
 
-app.get('/*', (req, res) => {
+app.get('/*', async (req, res) => {
     const signature = req.query.signature;
     const expires = req.query.expires;
     const method = 'GET'
@@ -90,51 +90,67 @@ app.get('/*', (req, res) => {
     if (!expires) {
         return res.status(403).send('Query parameter required: expires');
     }
-    if (!checkSafePath(reqPath)) {
+    if (!checkValidPath(reqPath)) {
         return res.status(403).send(`Invalid path: ${reqPath}`);
     }
     if (!checkValidSignature({path: reqPath, expires, method}, signature)) {
         return res.status(403).send('Invalid signature');
     }
-    
-    const filePath = path.join(BASE_DIR, reqPath);
-    const exists = fs.existsSync(filePath);
-    if (!exists) {
-        return res.status(404).send('File not found');
-    }
-    const stat = fs.statSync(filePath);
-    const fileSize = stat.size;
-    const range = req.headers.range;
 
-    let readStream
-    let head
-    if (range) {
-        const parts = range.replace(/bytes=/, "").split("-");
-        const start = parseInt(parts[0].trim(), 10);
-        const end = parts[1].trim() ? parseInt(parts[1].trim(), 10) : fileSize-1;
-        const chunkSize = (end-start)+1;
-        readStream = fs.createReadStream(filePath, {start, end});
-        head = {
-            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': chunkSize
-        };   
-    }
-    else {
-        readStream = fs.createReadStream(filePath);
-        head = {
-            'Content-Length': fileSize
-        };
-    }
-    res.writeHead(206, head);
-    readStream.pipe(res);
+    try {
+        const filePath = path.join(BASE_DIR, reqPath);
+        const exists = fs.existsSync(filePath);
+        if (!exists) {
+            throw new Error('File does not exist');
+        }
+        const stat = fs.statSync(filePath);
+        const fileSize = stat.size;
+        const range = req.headers.range;
 
-    readStream.on('error', err => {
-        return res.status(500).send(`Error reading file: ${err.message}`);
-    });
+        let readStream
+        let head
+        if (range) {
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0].trim(), 10);
+            const end = parts[1].trim() ? parseInt(parts[1].trim(), 10) : fileSize-1;
+            const chunkSize = (end-start)+1;
+            readStream = fs.createReadStream(filePath, {start, end});
+            head = {
+                'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                'Accept-Ranges': 'bytes',
+                'Content-Length': chunkSize
+            };   
+        }
+        else {
+            readStream = fs.createReadStream(filePath);
+            head = {
+                'Content-Length': fileSize
+            };
+        }
+        await new Promise((resolve, reject) => {
+            let resolved = false;
+            res.writeHead(200, head);
+            readStream.pipe(res);
+
+            readStream.on('error', err => {
+                if (resolved) return;
+                resolved = true;
+                reject(`Error reading file: ${err.message}`);
+            });
+
+            readStream.on('end', () => {
+                if (resolved) return;
+                resolved = true;
+                resolve();
+            });
+        });
+    }
+    catch(err) {
+        res.status(500).send(err.message);
+    }
 });
 
-app.put('/*', (req, res) => {
+app.put('/*', async (req, res) => {
     const signature = req.query.signature;
     const expires = req.query.expires;
     const method = 'PUT'
@@ -151,34 +167,71 @@ app.put('/*', (req, res) => {
     if (!expires) {
         return res.status(403).send('Query parameter required: expires');
     }
-    if (!checkSafePath(reqPath)) {
+    if (!checkValidPath(reqPath)) {
         return res.status(403).send(`Invalid path: ${reqPath}`);
     }
     if (!checkValidSignature({path: reqPath, expires, method}, signature)) {
         return res.status(403).send('Invalid signature');
     }
 
-    const filePath = path.join(BASE_DIR, reqPath);
-    const exists = fs.existsSync(filePath);
-    if (exists) {
-        return res.status(409).send('File already exists');
+    const temporaryFilePath = path.join(BASE_DIR, `.fsbucket/uploads/${generateRandomString(10)}.tmp`);
+
+    try {
+        const filePath = path.join(BASE_DIR, reqPath);
+        const exists = fs.existsSync(filePath);
+        if (exists) {
+            throw new Error('File already exists');
+        }
+
+        await createDirectory(path.dirname(temporaryFilePath));
+
+        const writeStream = fs.createWriteStream(temporaryFilePath);
+
+        req.pipe(writeStream);
+
+        await new Promise((resolve, reject) => {
+            let resolved = false;
+            req.on('error', err => {
+                if (resolved) return;
+                resolved = true;
+                reject(`Error reading request: ${err.message}`);
+            });
+
+            writeStream.on('error', err => {
+                if (resolved) return;
+                resolved = true;
+                reject(`Error writing file: ${err.message}`);
+            });
+
+            writeStream.on('finish', () => {
+                if (resolved) return;
+                resolved = true;
+                resolve();
+            });
+        });
+
+        const exists2 = fs.existsSync(filePath);
+        if (exists2) {
+            throw new Error('File already exists (2)');
+        }
+        await createDirectory(path.dirname(filePath));
+        await fs.promises.rename(temporaryFilePath, filePath);
+        res.status(200).send('File uploaded successfully');
     }
-
-    const writeStream = fs.createWriteStream(filePath);
-
-    req.pipe(writeStream);
-
-    req.on('error', err => {
-        return res.status(500).send(`Error reading request: ${err.message}`);
-    });
-
-    writeStream.on('error', err => {
-        return res.status(500).send(`Error writing file: ${err.message}`);
-    });
-
-    writeStream.on('finish', () => {
-        return res.status(200).send('File uploaded successfully');
-    });
+    catch(err) {
+        try {
+            const temporaryFileExists = fs.existsSync(temporaryFilePath);
+            if (temporaryFileExists) {
+                await fs.promises.unlink(temporaryFilePath).catch(() => {});
+            }
+        }
+        catch(err2) {
+            console.error(`Error removing temporary file: ${temporaryFilePath}`);
+        }
+        finally {
+            res.status(500).send(err.message);
+        }
+    }
 });
 
 function checkValidSignature({path, expires, method}, signature) {
@@ -196,8 +249,8 @@ function createSignature({path, expires, method}) {
     if (!expires) throw new Error('Expires is required');
     const expiresSec = parseInt(expires);
     if (isNaN(expiresSec)) throw new Error('Invalid expires');
-    // This followin timestamp is the number of seconds since the Unix epoch and
-    // should be the same no matter what timezone the server is in
+    // This following timestamp is the number of seconds since the Unix epoch
+    // and should be the same no matter what timezone the server is in
     const nowSec = Date.now() / 1000;
     if (expiresSec < nowSec) throw new Error('Expired');
     if (expiresSec > nowSec + 60 * 60 * 24) throw new Error('Expires too far in the future');
@@ -211,19 +264,23 @@ function sha1(str) {
     return hash.digest('hex');
 }
 
-function checkSafePath(path) {
+function checkValidPath(path) {
     // decode the path to prevent encoded path traversal attempts
     const decodedPath = decodeURIComponent(path);
+    if (decodedPath !== path) return false; // path contained encoded characters
 
+    // path must start with a slash and not contain two consecutive slashes
     if (!path.startsWith('/')) return false;
     if (path.includes('//')) return false;
 
     // split the path by both slashes and backslashes
-    const parts = decodedPath.split(/\/|\\/).filter(x => x !== '');
+    const parts = path.split(/[\\/]/).filter(x => x !== '');
 
     for (let part of parts) {
         // disallow empty parts, single dots, double dots, and null bytes
         if (part === '' || part === '.' || part === '..' || part.includes('\0')) return false;
+
+        if (part === '.fsbucket') return false; // reserved for internal use
 
         // only allow alphanumeric, dashes, underscores, and dots
         if (!part.match(/^[a-zA-Z0-9\-_\.]+$/)) return false;
@@ -245,6 +302,12 @@ function generateRandomString(length) {
         ret += chars[Math.floor(Math.random() * chars.length)];
     }
     return ret;
+}
+
+async function createDirectory(dirPath) {
+    const exists = fs.existsSync(dirPath);
+    if (exists) return;
+    await fs.promises.mkdir(dirPath, {recursive: true});
 }
 
 app.listen(PORT, () => {
