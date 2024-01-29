@@ -134,18 +134,19 @@ and then calling the FSBucket server to move the chunks to their final location.
 ## Security considerations
 
 Do not share the private key except with the other services in your application.
-Even if a user can expect the signatures of billions or trillions of request, it
-is essentially impossible to reverse engineer the secret key from the
+
+Even if a user could inspect the signatures of billions or trillions of request, it
+is practically impossible to reverse engineer the secret key from the
 signatures. This is because the secret key has 64 characters (it is recommended
 to randomly generate a string with alphanumeric characters), and the size of a
-sha1 hash is only 20 bytes. So even if you could invert the sha1 operation, you
-would have to guess from an enormous space of possible secret keys. And without
-the secret key it is essentially impossible to generate a valid signature.
+sha1 hash is only 20 bytes. So even if someone could invert the sha1 operation, they
+would need to guess from an enormous space of possible secret keys. Furthermore, without
+the secret key it is practically impossible to generate a valid signature.
 
-As mentioned above, even if the secret key were to be compromised, the
-consequences would be limited because the API is so limited, as described above.
+Furthermore, as mentioned above, even if the secret key were to be compromised, the
+consequences would be limited because the API is so limited.
 
-In summary, there is not much risk in exposing your file system to the internet
+In summary, there is not much risk in exposing a file system to the internet
 via FSBucket.
 
 ## Contributing
