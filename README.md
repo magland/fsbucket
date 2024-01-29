@@ -143,10 +143,10 @@ sha1 hash is only 20 bytes. So even if someone could invert the sha1 operation, 
 would need to guess from an enormous space of possible secret keys. Furthermore, without
 the secret key it is practically impossible to generate a valid signature.
 
-Furthermore, as mentioned above, even if the secret key were to be compromised, the
+As mentioned above, even if the secret key were to be compromised, the
 consequences would be limited because the API is so limited.
 
-In summary, there is not much risk in exposing a file system to the internet
+In summary, there is very litter risk in exposing a file system to the internet
 via FSBucket.
 
 ## Contributing
