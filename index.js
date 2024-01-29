@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const app = express();
 const crypto = require('crypto');
+const cors = require('cors');
 
 ///////////////////////////////////////////
 // Configuration
@@ -28,6 +29,9 @@ if (SECRET_KEY.length < 64) {
     console.error('You may want to use this one: ' + generateRandomString(64));
     process.exit(-1);
 }
+
+// Enable CORS for all origins
+app.use(cors());
 
 ///////////////////////////////////////////
 
