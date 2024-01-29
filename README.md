@@ -146,7 +146,7 @@ the secret key it is practically impossible to generate a valid signature.
 As mentioned above, even if the secret key were to be compromised, the
 consequences would be limited because the API is so limited.
 
-In summary, there is very litter risk in exposing a file system to the internet
+In summary, there is very little risk in exposing a file system to the internet
 via FSBucket.
 
 ## Contributing
