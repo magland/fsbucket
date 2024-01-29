@@ -1,39 +1,3 @@
-/*
-******************************************************************************
-
-FSBucket
-
-This is an Express.js server that provides a simple file storage service. It
-uses environment variables for configuration, including the base directory for
-file storage, a secret key for signature validation, and the server port.
-
-The environment variables are: FSBUCKET_BASE_DIR - the base directory for file
-storage FSBUCKET_SECRET_KEY - the secret key for signature validation PORT - the
-port the server will listen on
-
-The server supports two operations: GET and PUT.
-
-The GET operation is used to retrieve files. It validates the request signature
-and the safety of the requested path before proceeding. If the file exists and
-the request includes a range header, it will return the requested range of
-bytes. Otherwise, it will return the entire file.
-
-The PUT operation is used to upload files. It also validates the request
-signature and the safety of the requested path. If the file already exists, it
-will return an error. Otherwise, it will write the incoming request data to a
-temporary file, and then rename the temporary file to the requested path. This
-ensures that the file is not partially written if the request is interrupted.
-
-The entity generating the signature must have access to the secret key. To
-generate the signature, use the code below in the function:
-createSignature({path, expires, method})
-
-Author: Jeremy Magland
-January, 2024
-
-******************************************************************************
-*/
-
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
