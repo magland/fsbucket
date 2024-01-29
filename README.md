@@ -91,7 +91,7 @@ operation, and the signature is generated using the same method as for GET.
 The limitations of FSBucket can also be considered as advantages; A simple
 service is easier to maintain and has fewer security risks. Note that none of
 the operations are destructive. The idea is to use FSBucket as part of a more
-complex applications, with other services providing additional functionality
+complex application, with other services providing additional functionality
 such as file deletion, renaming, and replacement.
 
 FSBucket does NOT support:
@@ -129,7 +129,7 @@ It's true that multi-part uploads would provide advantages when uploading large
 files. However, support for this would make the server more complex. The
 expectation is that the larger application would contain the logic for splitting
 files into chunks, uploading them to a temporary locations on the file system,
-and then calling the FSBucket server to move the chunks to their final location.
+and then concatenating the chunks at the destination file.
 
 ## Security considerations
 
