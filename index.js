@@ -152,7 +152,13 @@ app.put('/*', async (req, res) => {
         const filePath = path.join(BASE_DIR, reqPath);
         const exists = fs.existsSync(filePath);
         if (exists) {
-            throw new Error('File already exists');
+            const fileName = path.basename(filePath);
+            if (!fileName.startsWith('_')) {
+                throw new Error('File already exists');
+            }
+            else {
+                // it's okay to replace a file that starts with an underscore
+            }
         }
 
         await createDirectory(path.dirname(temporaryFilePath));
