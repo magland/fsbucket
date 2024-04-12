@@ -77,7 +77,8 @@ Range: bytes=0-99
 The PUT operation is used to upload files, and is very similar to the GET
 operation. It validates the request signature and the safety of the requested
 path before proceeding. Importantly, if the file already exists, it will NOT be
-overwritten, and the request will fail.
+overwritten, and the request will fail. The exception being when the file name
+starts with an underscore "_".
 
 The format of the request URL is:
 
@@ -99,7 +100,7 @@ such as file deletion, renaming, and replacement.
 
 FSBucket does NOT support:
 - Directory listings
-- File deletion, renaming, or replacement
+- File deletion, renaming, or replacement (except when the file name starts with _)
 - Multipart uploads
 
 The authenticiation mechanism is intentionally very simple, with the expectation
