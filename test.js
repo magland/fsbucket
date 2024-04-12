@@ -29,7 +29,7 @@ class Client {
     }
 
     putFile(filePath, targetPath, callback) {
-        const expires = Math.floor(Date.now() / 1000) + 60; // Expires in 60 seconds
+        const expires = Math.floor(Date.now() / 1000) + 3600; // Expires in 3600 seconds
         const signature = this.createSignature({path: targetPath, expires, method: 'PUT'});
         const options = {
             hostname: this.baseURL,

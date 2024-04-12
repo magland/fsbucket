@@ -62,8 +62,9 @@ app.get('/*', async (req, res) => {
         if (!expires) {
             return res.status(403).send('Query parameter required: expires');
         }
-        if (!checkValidSignature({path: reqPath, expires, method}, signature)) {
-            return res.status(403).send('Invalid signature');
+        const {okay, error} = checkValidSignature({path: reqPath, expires, method}, signature);
+        if (!okay) {
+            return res.status(403).send(`Invalid *signature* for ${reqPath} ${expires} ${method} ${error}`);
         }
     }
 
@@ -89,7 +90,7 @@ app.get('/*', async (req, res) => {
                 'Content-Range': `bytes ${start}-${end}/${fileSize}`,
                 'Accept-Ranges': 'bytes',
                 'Content-Length': chunkSize
-            };   
+            };
         }
         else {
             readStream = fs.createReadStream(filePath);
@@ -140,8 +141,9 @@ app.put('/*', async (req, res) => {
     if (!checkValidPath(reqPath)) {
         return res.status(403).send(`Invalid path: ${reqPath}`);
     }
-    if (!checkValidSignature({path: reqPath, expires, method}, signature)) {
-        return res.status(403).send('Invalid signature');
+    const {okay, error} = checkValidSignature({path: reqPath, expires, method}, signature);
+    if (!okay) {
+        return res.status(403).send(`Invalid *signature* for ${reqPath} ${expires} ${method} ${error}`);
     }
 
     const temporaryFilePath = path.join(BASE_DIR, `.fsbucket/uploads/${generateRandomString(10)}.tmp`);
@@ -205,13 +207,28 @@ app.put('/*', async (req, res) => {
 });
 
 function checkValidSignature({path, expires, method}, signature) {
-    if (signature.length !== 64) return false;
+    if (signature.length !== 64) return {
+        okay: false,
+        error: 'Invalid signature length'
+    }
     try {
         const signatureToCheck = createSignature({path, expires, method});
-        return signature === signatureToCheck;
+        if (signature === signatureToCheck) {
+            return {okay: true};
+        }
+        else {
+            // only reveal the first 5 characters of the signature for debugging
+            return {
+                okay: false,
+                error: `Invalid signature: ${signature.slice(0, 5)}... <> ${signatureToCheck.slice(0, 5)}...`
+            };
+        }
     }
     catch (err) {
-        return false;
+        return {
+            okay: false,
+            error: err.message
+        };
     }
 }
 

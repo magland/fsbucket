@@ -5,10 +5,10 @@ Example testing
 PORT=3010 FSBUCKET_SECRET_KEY=UNDW13UBcI5MRiajzxBcD35KAUtVtELl7hlRFiiTaKMaJyFFJQoqaHQxbMj386fq npm run test-client
 
 To build docker image
-docker build -t magland/fsbucket:0.1.0 .
+docker build -t magland/fsbucket:latest .
 
 To push docker image
-docker push magland/fsbucket:0.1.0
+docker push magland/fsbucket:latest
 
 Example running server in docker
-docker run -e FSBUCKET_BASE_DIR=/home/magland/fsbucket -e FSBUCKET_SECRET_KEY=UNDW13UBcI5MRiajzxBcD35KAUtVtELl7hlRFiiTaKMaJyFFJQoqaHQxbMj386fq -p 3010:8080 -v /home/magland/fsbucket:/home/magland/fsbucket -it magland/fsbucket:0.1.0
+docker run -e FSBUCKET_BASE_DIR=/home/magland/fsbucket -e FSBUCKET_SECRET_KEY=UNDW13UBcI5MRiajzxBcD35KAUtVtELl7hlRFiiTaKMaJyFFJQoqaHQxbMj386fq -p 3010:8080 -v /home/magland/fsbucket:/home/magland/fsbucket -it magland/fsbucket:latest
