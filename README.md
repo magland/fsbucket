@@ -16,6 +16,8 @@ First set the following environment variables:
   characters long. Other services in your application should know this secret in
   order to generate signed URLs.
 - `PORT`: The port the server will listen on.
+- `FSBUCKET_PUBLIC_DOWNLOAD`: If set to `1`, the server will allow public
+  downloads without requiring a signature.
 
 Then install and run the server:
 
@@ -47,7 +49,8 @@ http://<server>:<port>/<path>?<query>
 
 where `<server>` is the server name or IP address, `<port>` is the port number,
 `<path>` is the path of the file relative to the base directory, and `<query>`
-is the query string. The query string must include the following parameters:
+is the query string (not needed if `FSBUCKET_PUBLIC_DOWNLOAD` is set to `1`).
+If usede, the query string must include the following parameters:
 
 - `signature`: The signature of the request, generated using the secret key
   using the method described below.

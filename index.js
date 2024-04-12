@@ -14,6 +14,8 @@ const BASE_DIR = process.env.FSBUCKET_BASE_DIR;
 const SECRET_KEY = process.env.FSBUCKET_SECRET_KEY;
 // The port the server will listen on
 const PORT = parseInt(process.env.PORT || '8080');
+// Whether to allow public downloads without a signature
+const ALLOW_PUBLIC_DOWNLOADS = process.env.FSBUCKET_PUBLIC_DOWNLOAD === '1';
 
 if (!BASE_DIR) {
     console.error('FSBUCKET_BASE_DIR environment variable is required');
@@ -36,8 +38,12 @@ app.use(cors());
 ///////////////////////////////////////////
 
 app.get('/*', async (req, res) => {
-    const signature = req.query.signature;
-    const expires = req.query.expires;
+    let signature = undefined;
+    let expires = undefined;
+    if (!ALLOW_PUBLIC_DOWNLOADS) {
+        signature = req.query.signature;
+        expires = req.query.expires;
+    }
     const method = 'GET'
     const reqPath = req.path;
     // disallow other query parameters
@@ -46,17 +52,19 @@ app.get('/*', async (req, res) => {
             return res.status(403).send('Invalid query');
         }
     }
-    if (!signature) {
-        return res.status(403).send('Query parameter required: signature');
-    }
-    if (!expires) {
-        return res.status(403).send('Query parameter required: expires');
-    }
     if (!checkValidPath(reqPath)) {
         return res.status(403).send(`Invalid path: ${reqPath}`);
     }
-    if (!checkValidSignature({path: reqPath, expires, method}, signature)) {
-        return res.status(403).send('Invalid signature');
+    if (!ALLOW_PUBLIC_DOWNLOADS) {
+        if (!signature) {
+            return res.status(403).send('Query parameter required: signature');
+        }
+        if (!expires) {
+            return res.status(403).send('Query parameter required: expires');
+        }
+        if (!checkValidSignature({path: reqPath, expires, method}, signature)) {
+            return res.status(403).send('Invalid signature');
+        }
     }
 
     try {
